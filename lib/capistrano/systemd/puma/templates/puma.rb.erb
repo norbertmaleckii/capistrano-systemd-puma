@@ -1,0 +1,14 @@
+#!/usr/bin/env puma
+
+environment '<%= fetch(:puma_env) %>'
+directory '<%= current_path %>'
+rackup '<%= fetch_puma_rackup %>'
+
+pidfile '<%= fetch_puma_pid %>'
+stdout_redirect '<%= fetch_puma_access_log %>', '<%= fetch_puma_error_log %>', true
+
+threads <%= fetch(:puma_threads) %>
+workers <%= fetch(:puma_workers) %>
+
+prune_bundler
+
