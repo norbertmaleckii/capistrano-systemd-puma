@@ -13,7 +13,9 @@ ExecStop=/bin/kill -TERM $MAINPID
 StandardOutput=append:<%= fetch_puma_access_log %>
 StandardError=append:<%= fetch_puma_error_log %>
 
-Environment=PATH=/home/deploy/.rbenv/shims:/usr/local/bin:/usr/bin:/bin
+<% fetch(:default_env).each do |key, value| %>
+Environment=<%= key %>=<%= value %>
+<% end %>
 Environment=MALLOC_ARENA_MAX=2
 
 Restart=always
