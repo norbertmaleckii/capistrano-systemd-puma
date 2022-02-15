@@ -4,8 +4,8 @@ namespace :puma do
   desc 'Reload puma'
   task :reload do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, "reload", process_name, raise_on_non_zero_exit: false
           else
@@ -19,8 +19,8 @@ namespace :puma do
   desc 'Restart puma'
   task :restart do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, 'restart', process_name
           else
@@ -34,8 +34,8 @@ namespace :puma do
   desc 'Stop puma'
   task :stop do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, "stop", process_name
           else
@@ -49,8 +49,8 @@ namespace :puma do
   desc 'Start puma'
   task :start do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, 'start', process_name
           else
@@ -64,16 +64,16 @@ namespace :puma do
   desc 'Install puma service'
   task :install do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
-          create_config_template(process_name)
-          create_systemd_template(process_name)
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
+          puma_create_config_template(process_name)
+          puma_create_systemd_template(process_name)
 
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, "enable", process_name
           else
             execute :systemctl, "--user", "enable", process_name
-            execute :loginctl, "enable-linger", fetch(:puma_lingering_user) if fetch(:puma_enable_lingering)
+            execute :loginctl, "enable-linger", fetch(:puma_lingering_user) if fetch(:puma_lingering_user)
           end
         end
       end
@@ -83,8 +83,8 @@ namespace :puma do
   desc 'Uninstall puma service'
   task :uninstall do
     on roles fetch(:puma_roles) do |role|
-      switch_user(role) do
-        each_process do |process_name|
+      puma_switch_user(role) do
+        puma_each_process(role) do |process_name|
           if fetch(:puma_service_unit_user) == :system
             execute :sudo, :systemctl, "disable", process_name
           else
@@ -97,21 +97,22 @@ namespace :puma do
     end
   end
 
-  desc 'Generate systemd locally'
-  task :generate_systemd_locally do
-    run_locally do
-      each_process do |process_name|
-        File.write("tmp/#{process_name}.service", compiled_systemd_template(process_name))
-      end
-    end
-  end
+  # TODO: Make it working after multi server multi process adjustment
+  # desc 'Generate systemd locally'
+  # task :generate_systemd_locally do
+  #   run_locally do
+  #     puma_each_process(role) do |process_name|
+  #       File.write("tmp/#{process_name}.service", puma_compiled_systemd_template(process_name))
+  #     end
+  #   end
+  # end
 
-  desc 'Generate config locally'
-  task :generate_config_locally do
-    run_locally do
-      each_process do |process_name|
-        File.write("tmp/#{process_name}.rb", compiled_config_template(process_name))
-      end
-    end
-  end
+  # desc 'Generate config locally'
+  # task :generate_config_locally do
+  #   run_locally do
+  #     puma_each_process(role) do |process_name|
+  #       File.write("tmp/#{process_name}.rb", puma_compiled_config_template(process_name))
+  #     end
+  #   end
+  # end
 end

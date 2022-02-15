@@ -5,13 +5,11 @@ module Capistrano
     module Puma
       class Plugin < Capistrano::Plugin
         def set_defaults
-          set_if_empty :puma_roles, -> { fetch(:puma_role, :app) }
-          set_if_empty :puma_processes, ['puma']
           set_if_empty :puma_env, -> { fetch(:stage) }
+          set_if_empty :puma_roles, -> { fetch(:puma_processes).map { |p| "puma-#{p}" } }
 
           set_if_empty :puma_init_system, :systemd
           set_if_empty :puma_service_unit_user, :user
-          set_if_empty :puma_enable_lingering, true
           set_if_empty :puma_lingering_user, nil
 
           set_if_empty :puma_pids_path, -> { File.join(shared_path, 'tmp', 'pids') }

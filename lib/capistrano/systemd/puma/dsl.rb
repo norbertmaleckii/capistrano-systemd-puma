@@ -4,16 +4,16 @@ module Capistrano
   module Systemd
     module Puma
       module DSL
-        def each_process
-          fetch(:puma_processes).each do |puma_current_process|
-            set(:puma_current_process, puma_current_process)
+        def puma_each_process(role)
+          fetch(:puma_processes).select { |k, _v| role.roles.to_a.map(&:to_s).include?("puma-#{k}") }.each do |process_name|
+            set(:puma_current_process, process_name)
 
-            yield puma_current_process
+            yield "puma-#{process_name}"
           end
         end
 
-        def create_config_template(process_name)
-          compiled_template = compiled_config_template(process_name)
+        def puma_create_config_template(process_name)
+          compiled_template = puma_compiled_config_template(process_name)
           tmp_path = "/tmp/#{process_name}.rb"
 
           upload!(StringIO.new(compiled_template), tmp_path)
@@ -25,7 +25,7 @@ module Capistrano
           end
         end
 
-        def compiled_config_template(process_name)
+        def puma_compiled_config_template(process_name)
           search_paths = [
             File.expand_path(
                 File.join(*%w[.. templates puma.rb.erb]),
@@ -39,14 +39,14 @@ module Capistrano
           ERB.new(template).result(binding)
         end
 
-        def create_systemd_template(process_name)
-          systemd_path = fetch(:service_unit_path, fetch_systemd_unit_path)
+        def puma_create_systemd_template(process_name)
+          systemd_path = fetch_puma_systemd_unit_path
 
           if fetch(:puma_service_unit_user) == :user
             execute :mkdir, "-p", systemd_path
           end
 
-          compiled_template = compiled_systemd_template(process_name)
+          compiled_template = puma_compiled_systemd_template(process_name)
           tmp_path = "/tmp/#{process_name}.service"
 
           upload!(StringIO.new(compiled_template), tmp_path)
@@ -60,9 +60,10 @@ module Capistrano
           end
         end
 
-        def compiled_systemd_template(process_name)
+        def puma_compiled_systemd_template(process_name)
           args = []
           args.push "--config #{fetch_puma_config}"
+          args.push "--port 3000"
 
           search_paths = [
             File.expand_path(
@@ -77,7 +78,7 @@ module Capistrano
           ERB.new(template).result(binding)
         end
 
-        def switch_user(role)
+        def puma_switch_user(role)
           su_user = puma_user
 
           if su_user != role.user
@@ -93,7 +94,7 @@ module Capistrano
           fetch(:puma_user, fetch(:run_as))
         end
 
-        def fetch_systemd_unit_path
+        def fetch_puma_systemd_unit_path
           if fetch(:puma_service_unit_user) == :system
             "/etc/systemd/system/"
           else
@@ -104,11 +105,13 @@ module Capistrano
         end
 
         def fetch_puma_rackup
-          if fetch(:puma_processes).length > 1
-            File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
-          else
-            File.join(current_path, 'config.ru')
-          end
+          # if fetch(:puma_processes).length > 1
+          #   File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
+          # else
+          #   File.join(current_path, 'config.ru')
+          # end
+
+          File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
         end
 
         def fetch_puma_pid
