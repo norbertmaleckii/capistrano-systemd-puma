@@ -105,13 +105,13 @@ module Capistrano
         end
 
         def fetch_puma_rackup
-          # if fetch(:puma_processes).length > 1
-          #   File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
-          # else
-          #   File.join(current_path, 'config.ru')
-          # end
+          if fetch(:puma_processes).length > 1
+            File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
+          else
+            File.join(current_path, 'config.ru')
+          end
 
-          File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
+          # File.join(current_path, 'apps', fetch(:puma_current_process), 'config.ru')
         end
 
         def fetch_puma_pid
